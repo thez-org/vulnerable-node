@@ -1,0 +1,3 @@
+[submodule "ruby/setup-ruby"]
+	path = ruby/setup-ruby
+	url = https://github.com/ruby/setup-ruby
