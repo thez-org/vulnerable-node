@@ -4,7 +4,7 @@ on:
   pull_request:
     types: [opened, reopened, synchronize]
     paths: [github-actions-allow-list.yml]
-    branches: [main]
+    branches: [master]
       
 jobs:
   get-candidate-action:
