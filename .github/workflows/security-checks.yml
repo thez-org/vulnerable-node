@@ -1,0 +1,110 @@
+name: Add candidate Actions submodules and Security Checks
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths: [github-actions-allow-list.yml]
+    branches: [main]
+      
+jobs:
+  get-candidate-action:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      
+    outputs:
+      added_repos: ${{ steps.changed_files.outputs.added_repos }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with: 
+          ref: ${{ github.base_ref }}
+          fetch-depth: 0
+          
+      - name: setup git config
+        run: |
+          # setup the username and email. I tend to use 'GitHub Actions Bot' with no email by default
+          git config user.name "GitHub Actions Bot"
+          git config user.email "<>"
+          
+      - name: Get changed files
+        id: changed_files
+        run: |
+          git checkout ${{ github.head_ref }}
+          changed_files=$(git diff --name-only ${{ github.base_ref }}..${{ github.head_ref }})
+          specific_file="github-actions-allow-list.yml"
+          if [[ $changed_files == *"$specific_file"* ]]; then
+              echo "File $specific_file is changed"
+              added_lines=$(git diff --no-color --unified=0 ${{ github.base_ref }}..${{ github.head_ref }} $specific_file | grep '^\+  - ' | sed 's/^+  - //')
+          else
+              echo "File $specific_file is not changed"
+          fi
+          repos=""
+          for line in $added_lines; do
+              tag="${line##*@}"
+              repo="${line%@$tag}"
+              repos=$repos{\repo:\"$repo\",version:\"$tag\"},
+          done
+          repos="["$repos"]"
+          repos=$(echo $repos | sed 's/,$//')
+          echo added_repos=$repos >> $GITHUB_OUTPUT
+        
+         
+          
+  dependancy-graph:
+    runs-on: ubuntu-latest
+    needs: get-candidate-action
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    strategy:
+      matrix:
+        path: ${{fromJson(needs.get-candidate-action.outputs.added_repos)}} 
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with: 
+          ref: ${{ github.base_ref }}
+          fetch-depth: 0
+      
+      - name: setup git config
+        run: |
+          # setup the username and email. I tend to use 'GitHub Actions Bot' with no email by default
+          git config user.name "GitHub Actions Bot"
+          git config user.email "<>"
+      
+      - name: Init submodule
+        id: init_submodule
+        run: |
+              git checkout ${{ github.head_ref }}
+              
+              if [ ! -d $repo ]; then 
+               git submodule add https://github.com/$repo $repo
+              fi
+              
+              cd $repo
+              git checkout $tag
+              git submodule update --init --recursive
+              npm install
+              
+              cd $GITHUB_WORKSPACE
+              git commit -m "added submodules for new acitons"
+              git push
+        env:
+          repo: ${{ matrix.path.repo }} 
+          tag: ${{ matrix.path.version }}
+
+      - uses: anchore/sbom-action@v0
+        with:
+         path: ${{ matrix.path.repo }} 
+         dependency-snapshot: true
+         
+      - name: 'Dependency Review'
+        uses: actions/dependency-review-action@v3
+        with:
+          comment-summary-in-pr: true
+          fail-on-severity: 'critical'
