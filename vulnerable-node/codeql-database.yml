@@ -1,0 +1,10 @@
+---
+sourceLocationPrefix: /Users/s/ghw/clients/bmw/dev/ghes/allow-list-as-code/vulnerable-node
+baselineLinesOfCode: 2934
+unicodeNewlines: true
+columnKind: utf16
+primaryLanguage: javascript
+creationMetadata:
+  cliVersion: 2.12.6
+  creationTime: 2023-04-12T13:17:36.046225Z
+finalised: true

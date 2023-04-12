@@ -1,0 +1,1 @@
+{"languages":{"javascript":{"files":["config.js","app.js","dummy.js","routes/products.js","routes/login.js","routes/login_check.js","model/auth.js","model/products.js","model/init_db.js","bin/www","public/js/freewall.js","public/js/bootstrap.js"],"linesOfCode":2934}}}
