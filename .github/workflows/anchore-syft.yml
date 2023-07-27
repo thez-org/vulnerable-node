@@ -34,5 +34,6 @@ jobs:
       uses: anchore/sbom-action@bb716408e75840bbb01e839347cd213767269d4a
       with:
         format: spdx-json
+        file: package.json
         artifact-name: image.spdx.json
         upload-artifact: true
